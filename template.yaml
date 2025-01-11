@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Análisis Inteligente de CV con AWS SAM
+
+# Si necesitamos más recursos, se añaden en esta plantilla
+
+Globals:
+  Function:
+    Timeout: 3
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "Nombre del bucket S3"
+  RoleArn:
+    Type: String
+    Description: "ARN del rol IAM a usar"
+
+Resources:
+  # Definir el bucket S3
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+
+  # Tópico SNS para enviar notificaciones
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: CV Evaluation Notifications
+
+  # Función Lambda para analizar los CVs
+  AnalyzeCVFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      CodeUri: ./src
+      Role: !Ref RoleArn
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref NotificationTopic
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref MyBucket
+            Events: s3:ObjectCreated:*
+
+  # Permisos para que S3 invoque la Lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt AnalyzeCVFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::${MyBucket}
+
