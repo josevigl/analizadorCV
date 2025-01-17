@@ -23,6 +23,8 @@ KEYWORDS = {
     "bases de datos": 5,
     "python": 8,
     "java": 5,
+    "docker": 6,
+    "kubernetes": 8
 }
 
 
@@ -54,14 +56,45 @@ def lambda_handler(event, context):
 
 
 def extract_text_CV(bucket, key):
-   
-    #TODO: Implementar servicio textract (debería devolver el texto en str)
+    """
+    Extrae texto del CV utilizando Amazon Textract.
+    """
+    try:
+        # Iniciar la detección de texto
+        response = textract_client.start_document_text_detection(
+            DocumentLocation={"S3Object": {"Bucket": bucket, "Name": key}}
+        )
 
-    textract_client.start_document_text_detection(
-        DocumentLocation={"S3Object": {"Bucket": bucket, "Name": key}}
-    )
+        job_id = response["JobId"]
+        logger.info(f"Job iniciado con ID: {job_id}")
 
-    return None
+        # Esperar hasta que el trabajo esté completo
+        while True:
+            job_status = textract_client.get_document_text_detection(JobId=job_id)
+            status = job_status["JobStatus"]
+
+            if status in ["SUCCEEDED", "FAILED"]:
+                break
+
+            logger.info("Esperando a que Textract complete el trabajo...")
+            time.sleep(5)
+
+        if status == "SUCCEEDED":
+            logger.info("Textract completado exitosamente.")
+            # Extraer bloques de texto
+            extracted_text = " ".join(
+                block["Text"] for block in job_status.get("Blocks", []) if block["BlockType"] == "LINE"
+            )
+
+            print(extracted_text)
+            return extracted_text
+
+        logger.error("Textract falló al procesar el documento.")
+        return None
+
+    except Exception as e:
+        logger.error(f"Error al procesar Textract: {e}")
+        return None
 
 
 def evaluate_cv(text):
