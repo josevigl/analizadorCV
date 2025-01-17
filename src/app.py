@@ -1,19 +1,15 @@
-﻿import os
+﻿﻿import os
 import json
 import time
 import logging
 import boto3
 from botocore.exceptions import ClientError
-from sentence_transformers import SentenceTransformer, util
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 textract_client = boto3.client("textract")
 sns_client = boto3.client("sns")
-
-# Modelo para calcular el puntaje de similitud del texto extraido con la oferta
-model = SentenceTransformer('distiluse-base-multilingual-cased-v1')
 
 # aquí podríamos establecer palabras clave (skills, aptitudes...) que tengan los CV,
 # y asignar puntuación a cada una de ellas
@@ -106,17 +102,6 @@ def evaluate_cv(text):
         if keyword.lower() in text.lower():
             total += points
     return total
-
-def calculate_similarity(text, job_vacancy):
-    """
-    Calcula la similitud del texto extraído del CV con el puesto ofertado
-    """
-    embedding_text = model.encode(text, convert_to_tensor=True)
-    embedding_vacancy = model.encode(job_vacancy, convert_to_tensor=True)
-
-    similarity_score = util.cos_sim(embedding_text, embedding_vacancy).item()
-
-    return similarity_score
 
 def send_notification(score, bucket, key, topic_arn):
     """
