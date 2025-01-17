@@ -59,23 +59,4 @@ Resources:
       Principal: s3.amazonaws.com
       SourceArn: !Sub arn:aws:s3:::${MyBucket}
 
-  # Política adicional para Textract y SNS
-  LambdaPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: AnalyzeCVPolicy
-      Roles:
-        - !Ref RoleArn
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action:
-              - textract:StartDocumentTextDetection
-              - textract:GetDocumentTextDetection
-            Resource: "*"
-          - Effect: Allow
-            Action:
-              - sns:Publish
-            Resource: !Ref NotificationTopic
 
