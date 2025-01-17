@@ -6,7 +6,7 @@ Description: Análisis Inteligente de CV con AWS SAM
 
 Globals:
   Function:
-    Timeout: 3
+    Timeout: 30
     Tracing: Active
     LoggingConfig:
       LogFormat: JSON
@@ -26,11 +26,15 @@ Resources:
     Properties:
       BucketName: !Ref BucketName
 
+
+
   # Tópico SNS para enviar notificaciones
   NotificationTopic:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: CV Evaluation Notifications
+
+
 
   # Función Lambda para analizar los CVs
   AnalyzeCVFunction:
@@ -49,6 +53,11 @@ Resources:
           Properties:
             Bucket: !Ref MyBucket
             Events: s3:ObjectCreated:*
+      EventInvokeConfig:
+        DestinationConfig:
+          OnSuccess:
+            Type: SNS
+            Destination: !Ref NotificationTopic
 
   # Permisos para que S3 invoque la Lambda
   LambdaInvokePermission:
@@ -58,5 +67,14 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
       SourceArn: !Sub arn:aws:s3:::${MyBucket}
+
+Outputs:
+  LambdaFunctionName:
+    Description: AnalyzeCVFunction
+    Value: !Ref AnalyzeCVFunction
+    
+  SNSDestinationTopicArn:
+    Description: ARN SNS topic
+    Value: !Ref NotificationTopic
 
 
