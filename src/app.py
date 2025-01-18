@@ -106,11 +106,18 @@ def evaluate_cv(text):
     logger.info(f"Puntuacion obtenida {total}")
     return total
 
+def sumar_valores(diccionario):
+    total = 0
+    for valor in diccionario.values():
+        total += valor
+    return total
+
 def send_notification(candidate_data, score, bucket, key, topic_arn):
     """
     Envía una notificación al tópico SNS con la puntuación y el nombre del archivo
     """
-
+    total = sumar_valores(KEYWORDS)
+    score = score / total * 10
     msg = (
         f"Se ha recibido un nuevo CV: {bucket}\n"
         f"Archivo: {key}\n"
