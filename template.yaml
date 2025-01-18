@@ -6,7 +6,7 @@ Description: Análisis Inteligente de CV con AWS SAM
 
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 360
     Tracing: Active
     LoggingConfig:
       LogFormat: JSON

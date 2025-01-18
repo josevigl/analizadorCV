@@ -14,7 +14,7 @@ sns_client = boto3.client("sns")
 # aquí podríamos establecer palabras clave (skills, aptitudes...) que tengan los CV,
 # y asignar puntuación a cada una de ellas
 KEYWORDS = {
-    "trabajo en equipo": 5,
+    "trabajo en equipo": 10,
     "aws": 10,
     "bases de datos": 5,
     "python": 8,
@@ -37,15 +37,14 @@ def lambda_handler(event, context):
         logger.info(f"procesando CV: s3://{bucket_name}/{object}")
 
         # aquí iría el texto del CV a evaluar, después de que se complete textract
-        extracted_text = extract_text_CV(bucket_name, object)
-
+        cv_data, extracted_text = extract_text_CV(bucket_name, object)
         topic_arn = os.environ.get("SNS_TOPIC_ARN", "")
         if not topic_arn:
             logger.error("error envar: SNS_TOPIC_ARN")
             continue
 
         try:
-            send_notification(evaluate_cv(extracted_text), bucket_name, object, topic_arn)
+            send_notification(cv_data, evaluate_cv(extracted_text), bucket_name, object, topic_arn)
             logger.info(f"notificación enviada {topic_arn}")
         except ClientError as e:
             logger.error(f"ERROR: {e}")
@@ -75,15 +74,18 @@ def extract_text_CV(bucket, key):
             logger.info("Esperando a que Textract complete el trabajo...")
             time.sleep(5)
 
+        cv_data = {}
+        extracted_text = " "
         if status == "SUCCEEDED":
             logger.info("Textract completado exitosamente.")
-            # Extraer bloques de texto
-            extracted_text = " ".join(
-                block["Text"] for block in job_status.get("Blocks", []) if block["BlockType"] == "LINE"
-            )
-
-            print(extracted_text)
-            return extracted_text
+            for block in job_status.get("Blocks", []):
+                if block["BlockType"] == "LINE":
+                    category = block ["Text"].split(':')
+                    if len(category) > 1: 
+                        cv_data[category[0].strip().lower()] = category[1]
+                    else:
+                        extracted_text += block["Text"] + " "
+            return (cv_data, extracted_text)
 
         logger.error("Textract falló al procesar el documento.")
         return None
@@ -101,9 +103,10 @@ def evaluate_cv(text):
     for keyword, points in KEYWORDS.items():
         if keyword.lower() in text.lower():
             total += points
+    logger.info(f"Puntuacion obtenida {total}")
     return total
 
-def send_notification(score, bucket, key, topic_arn):
+def send_notification(candidate_data, score, bucket, key, topic_arn):
     """
     Envía una notificación al tópico SNS con la puntuación y el nombre del archivo
     """
@@ -111,6 +114,9 @@ def send_notification(score, bucket, key, topic_arn):
     msg = (
         f"Se ha recibido un nuevo CV: {bucket}\n"
         f"Archivo: {key}\n"
+        f"Nombre del candidato: {candidate_data["nombre"]}\n"
+        f"Direccion del candidato: {candidate_data["direccion"]}\n"
+        f"Edad: {candidate_data["edad"]}\n"
         f"Puntaje obtenido: {score}\n\n"
         f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
