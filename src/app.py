@@ -122,8 +122,12 @@ def send_notification(candidate_data, score, bucket, key, topic_arn):
         f"Se ha recibido un nuevo CV: {bucket}\n"
         f"Archivo: {key}\n"
         f"Nombre del candidato: {candidate_data["nombre"]}\n"
-        f"Direccion del candidato: {candidate_data["direccion"]}\n"
+        f"Telefono: {candidate_data["tlf"]}\n"
+        f"Direccion: {candidate_data["direccion"]}\n"
         f"Edad: {candidate_data["edad"]}\n"
+        f"Email: {candidate_data["email"]}\n"
+        f"GitHub: {candidate_data["github"]}\n"
+        f"Linkedin: {candidate_data["linkedin"]}\n"
         f"Puntaje obtenido: {score}\n\n"
         f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
