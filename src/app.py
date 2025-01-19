@@ -1,4 +1,4 @@
-﻿﻿import os
+﻿import os
 import json
 import time
 import logging
@@ -122,7 +122,7 @@ def send_notification(candidate_data, score, bucket, key, topic_arn):
         f"Se ha recibido un nuevo CV: {bucket}\n"
         f"Archivo: {key}\n"
         f"Nombre del candidato: {candidate_data["nombre"]}\n"
-        f"Telefono: {candidate_data["tlf"]}\n"
+        f"Telefono: {candidate_data["telefono"]}\n"
         f"Direccion: {candidate_data["direccion"]}\n"
         f"Edad: {candidate_data["edad"]}\n"
         f"Email: {candidate_data["email"]}\n"
